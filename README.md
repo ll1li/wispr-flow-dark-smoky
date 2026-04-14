@@ -71,11 +71,24 @@ The script extracts Wispr Flow's Electron `app.asar` bundle, patches the hub and
 | `sepia(0.08)` + `opacity: 0.92` | Adds warmth and dims harsh whites |
 | Counter-invert on `img, video, canvas` | Keeps media looking natural |
 
+## Compatibility
+
+| Wispr Flow | Dark Smokey | Status |
+|------------|-------------|--------|
+| 1.4.x      | v1.0.0      | Tested |
+
+If Wispr Flow restructures its renderer after an update, the script will detect the change and exit with an error instead of silently failing.
+
 ## Requirements
 
 - macOS
 - [Wispr Flow](https://wispr.com/) in `/Applications/`
 - [Node.js](https://nodejs.org/) (uses `npx asar` to unpack/repack the bundle)
+- Internet connection (first run only, to download `asar`)
+
+## Disclaimer
+
+This is an unofficial community project. It only modifies CSS styling in the renderer HTML -- no proprietary code is extracted, reverse-engineered, or redistributed. A backup of the original bundle is created automatically and can be restored at any time with `--restore`.
 
 ## License
 
