@@ -85,6 +85,16 @@ cat > "$WORKDIR/wispr/.webpack/renderer/scratchpad/index.html" << HTMLEOF
 <!doctype html><html><head><meta charset="UTF-8"/><style>${DARK_CSS}</style><script defer="defer" src="../vendor/index.js"></script><script defer="defer" src="../scratchpad/index.js"></script></head><body style="overflow:hidden;background:#1a1a1a"></body></html>
 HTMLEOF
 
+echo "==> Patching context menu..."
+cat > "$WORKDIR/wispr/.webpack/renderer/contextMenu/index.html" << HTMLEOF
+<!doctype html><html><head><meta charset="UTF-8"/><title>Context Menu</title><style>body{margin:0;padding:0;background:transparent;overflow:hidden}${DARK_CSS}</style><script defer="defer" src="../vendor/index.js"></script><script defer="defer" src="../contextMenu/index.js"></script></head><body><div id="root"></div></body></html>
+HTMLEOF
+
+echo "==> Patching status bar..."
+cat > "$WORKDIR/wispr/.webpack/renderer/status/index.html" << HTMLEOF
+<!doctype html><html><head><meta charset="UTF-8"/><style>${DARK_CSS}</style><script defer="defer" src="../vendor/index.js"></script><script defer="defer" src="../status/index.js"></script></head><body style="overflow:hidden"></body></html>
+HTMLEOF
+
 echo "==> Repacking..."
 npx --yes asar pack "$WORKDIR/wispr" "$ASAR" 2>/dev/null
 
