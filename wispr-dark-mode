@@ -91,8 +91,11 @@ cat > "$WORKDIR/wispr/.webpack/renderer/contextMenu/index.html" << HTMLEOF
 HTMLEOF
 
 echo "==> Patching status bar..."
-cat > "$WORKDIR/wispr/.webpack/renderer/status/index.html" << HTMLEOF
-<!doctype html><html><head><meta charset="UTF-8"/><style>${DARK_CSS}</style><script defer="defer" src="../vendor/index.js"></script><script defer="defer" src="../status/index.js"></script></head><body style="overflow:hidden"></body></html>
+cat > "$WORKDIR/wispr/.webpack/renderer/status/index.html" << 'HTMLEOF'
+<!doctype html><html><head><meta charset="UTF-8"/><style>
+html, body { background: transparent !important; }
+* { border-color: transparent !important; box-shadow: none !important; }
+</style><script defer="defer" src="../vendor/index.js"></script><script defer="defer" src="../status/index.js"></script></head><body style="overflow:hidden"></body></html>
 HTMLEOF
 
 echo "==> Repacking..."
