@@ -1,20 +1,43 @@
-# Wispr Flow Dark Smoky
+<h1 align="center">
+  Wispr Flow Dark Smoky
+</h1>
 
-A one-command dark theme for [Wispr Flow](https://wispr.com/) on macOS.
+<h4 align="center">A one-command dark theme for <a href="https://wispr.com/" target="_blank">Wispr Flow</a> on macOS.</h4>
 
-![Wispr Flow Dark Smoky](screenshot.png)
+<p align="center">
+  <a href="https://github.com/ll1li/wispr-flow-dark-smoky/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/ll1li/wispr-flow-dark-smoky?style=flat-square" alt="License">
+  </a>
+  <a href="https://github.com/ll1li/wispr-flow-dark-smoky/releases">
+    <img src="https://img.shields.io/github/v/release/ll1li/wispr-flow-dark-smoky?style=flat-square&label=version" alt="Version">
+  </a>
+  <img src="https://img.shields.io/badge/platform-macOS-blue?style=flat-square" alt="Platform">
+  <img src="https://img.shields.io/badge/requires-Node.js-green?style=flat-square" alt="Requires Node.js">
+</p>
 
-Wispr Flow ships with a hardcoded white UI and no dark mode option. This script patches the Electron app bundle to inject a carefully tuned dark theme with warm tones, uniform backgrounds, and clean outlines.
+<p align="center">
+  <a href="#install">Install</a> •
+  <a href="#usage">Usage</a> •
+  <a href="#how-it-works">How It Works</a> •
+  <a href="#license">License</a>
+</p>
 
-## What it does
+<p align="center">
+  <img src="screenshot.png" alt="Wispr Flow Dark Smoky" width="700">
+</p>
 
-- Inverts the entire UI to dark with balanced contrast
-- Unifies sidebar and content backgrounds (no mismatched grays)
-- Adds a subtle warm sepia tone to avoid clinical whites
-- Dims text brightness for comfortable reading
-- Removes heavy borders, adds clean thin outlines on interactive elements
-- Counter-inverts images and media so they render naturally
-- Creates a backup for easy one-command restore
+---
+
+Wispr Flow ships with a hardcoded white UI and no dark mode option. This script patches the Electron app bundle to inject a carefully tuned dark theme with warm smoky tones, uniform backgrounds, and clean outlines.
+
+## Features
+
+- **Uniform dark background** -- overrides internal CSS variables to eliminate sidebar/content color mismatch
+- **Warm smoky tone** -- subtle sepia filter avoids the clinical white-on-black look
+- **Dimmed text** -- comfortable reading without harsh contrast
+- **Clean outlines** -- thin borders on interactive elements for visual structure
+- **Natural media** -- images and video are counter-inverted so they render correctly
+- **Safe** -- creates a backup on first run, one-command restore at any time
 
 ## Install
 
@@ -23,7 +46,7 @@ curl -fsSL https://raw.githubusercontent.com/ll1li/wispr-flow-dark-smoky/main/wi
   -o ~/.local/bin/wispr-dark-mode && chmod +x ~/.local/bin/wispr-dark-mode
 ```
 
-Make sure `~/.local/bin` is in your `PATH`. Alternatively, use `/usr/local/bin/` (may require `sudo`).
+> Make sure `~/.local/bin` is in your `PATH`. Alternatively, use `/usr/local/bin/` (may require `sudo`).
 
 ## Usage
 
@@ -35,20 +58,25 @@ wispr-dark-mode
 wispr-dark-mode --restore
 ```
 
-Re-run after Wispr Flow auto-updates -- the update will overwrite the patch.
+Re-run after Wispr Flow updates -- the update will overwrite the patch.
+
+## How It Works
+
+The script extracts Wispr Flow's Electron `app.asar` bundle, patches the hub and scratchpad renderer HTML with CSS overrides, and repacks it. A backup is saved as `app.asar.bak` on first run.
+
+| Layer | What it does |
+|-------|-------------|
+| `filter: invert(0.94) hue-rotate(180deg)` | Flips the UI to dark while preserving color relationships |
+| `--sand-*`, `--vast-*`, `--neutral-*` overrides | Forces all background shades to the same value |
+| `sepia(0.08)` + `opacity: 0.92` | Adds warmth and dims harsh whites |
+| Counter-invert on `img, video, canvas` | Keeps media looking natural |
 
 ## Requirements
 
 - macOS
-- [Wispr Flow](https://wispr.com/) installed in `/Applications/`
-- Node.js (uses `npx asar` to unpack/repack the Electron bundle)
-
-## How it works
-
-The script extracts Wispr Flow's `app.asar` bundle, patches the hub and scratchpad renderer HTML with CSS overrides, and repacks it. A backup is saved as `app.asar.bak`.
-
-The theme uses `filter: invert(0.94) hue-rotate(180deg)` on the root element, overrides Wispr's internal CSS color variables (`--sand-*`, `--vast-*`, `--neutral-*`) to produce a uniform dark background, and applies `sepia(0.08)` with `opacity: 0.92` for warmth and dimmed text.
+- [Wispr Flow](https://wispr.com/) in `/Applications/`
+- [Node.js](https://nodejs.org/) (uses `npx asar` to unpack/repack the bundle)
 
 ## License
 
-MIT
+[MIT](LICENSE)
