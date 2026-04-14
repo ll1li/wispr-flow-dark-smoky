@@ -1,145 +1,109 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Wispr Flow Dark Smokey
-# Injects a warm dark theme into Wispr Flow's Electron renderer HTML.
-# Re-run after any Wispr Flow update.
-#
-# Requirements: macOS, Node.js (for npx asar), internet (first run)
-# Usage: wispr-dark-mode [--restore]
-
-ASAR="/Applications/Wispr Flow.app/Contents/Resources/app.asar"
+VERSION="1.1.0"
+ASAR="${WISPR_PATH:-/Applications/Wispr Flow.app}/Contents/Resources/app.asar"
 BACKUP="${ASAR}.bak"
+ASAR_WRITTEN=0
+MARKER="data-wispr-dark-smokey"
 
-# Renderer HTML paths inside the extracted asar bundle
-# (discovered via: npx asar extract app.asar /tmp/wispr && find /tmp/wispr -name index.html)
-RENDERERS=(hub scratchpad contextMenu status)
+# Pinned version — no supply chain surprise
+ASAR_CMD="@electron/asar@3.2.10"
 
-# Preflight checks
-for cmd in npx killall open; do
-  command -v "$cmd" >/dev/null 2>&1 || { echo "Error: required command '$cmd' not found."; exit 1; }
-done
+usage() {
+  echo "wispr-dark-mode $VERSION — dark theme for Wispr Flow"
+  echo ""
+  echo "Usage: wispr-dark-mode [--restore|--check|--version|--help]"
+  echo ""
+  echo "  (no args)    Apply dark theme"
+  echo "  --restore    Restore original Wispr Flow"
+  echo "  --check      Check if theme is currently applied"
+  echo "  --version    Print version"
+  echo "  --help       Show this help"
+  echo ""
+  echo "Set WISPR_PATH to override the default install location."
+  exit 0
+}
 
-if [ ! -f "$ASAR" ]; then
-  echo "Error: Wispr Flow not found at $ASAR"
-  exit 1
-fi
+[[ "${1:-}" == "--help" ]]    && usage
+[[ "${1:-}" == "--version" ]] && echo "wispr-dark-mode $VERSION" && exit 0
+[[ -f "$ASAR" ]]              || { echo "Error: Wispr Flow not found at $ASAR"; exit 1; }
+command -v npx &>/dev/null    || { echo "Error: Node.js required (npx not found). Install: https://nodejs.org"; exit 1; }
 
-# Restore mode
-if [ "${1:-}" = "--restore" ]; then
-  if [ -f "$BACKUP" ]; then
-    if ! cp "$BACKUP" "$ASAR"; then
-      echo "Error: could not restore — try running with sudo."
-      exit 1
-    fi
-    echo "Restored original. Restarting Wispr Flow..."
+WORKDIR=$(mktemp -d)
+cleanup() {
+  rm -rf "$WORKDIR"
+  if [[ "$ASAR_WRITTEN" == "1" ]]; then
     killall 'Wispr Flow' 2>/dev/null || true
-    sleep 1
-    open -a 'Wispr Flow'
+    for _ in 1 2 3 4 5; do pgrep -x 'Wispr Flow' >/dev/null || break; sleep 1; done
+    open -a 'Wispr Flow' 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT
+
+# --check: detect if theme is applied
+if [[ "${1:-}" == "--check" ]]; then
+  npx --yes "$ASAR_CMD" extract "$ASAR" "$WORKDIR/wispr" 2>/dev/null
+  if grep -q "$MARKER" "$WORKDIR/wispr/.webpack/renderer/hub/index.html" 2>/dev/null; then
+    echo "Dark Smokey is applied."
   else
-    echo "No backup found at $BACKUP"
+    echo "Dark Smokey is not applied."
   fi
   exit 0
 fi
 
-WORKDIR=$(mktemp -d)
-trap 'rm -rf "$WORKDIR"' EXIT
-
-# Shared CSS for hub, scratchpad, and context menu
-DARK_CSS='
-html {
-  background: #1a1a1a !important;
-  filter: invert(0.94) hue-rotate(180deg) !important;
-}
-img, video, canvas, svg image, picture {
-  filter: invert(1) hue-rotate(180deg) !important;
-}
-:root {
-  --sand-50: #fff !important; --sand-100: #fff !important;
-  --sand-200: #fff !important; --sand-300: #fff !important;
-  --sand-400: #fff !important; --sand-500: #fff !important;
-  --vast-50: #fff !important; --vast-100: #fff !important;
-  --neutral-10: #fff !important;
-}
-* {
-  border-color: transparent !important;
-  outline-color: transparent !important;
-  box-shadow: none !important;
-}
-body { opacity: 0.92; filter: sepia(0.08); }
-button, a[href], [role="button"], [role="tab"],
-nav a, nav button, li > a, li > button {
-  border: 1px solid rgba(128,128,128,0.18) !important;
-  border-radius: 8px;
-}
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.15); border-radius: 3px; }
-'
-
-# Only backup on first run (prevents overwriting original with patched version)
-if [ ! -f "$BACKUP" ]; then
-  echo "==> Backing up app.asar..."
-  cp "$ASAR" "$BACKUP"
-else
-  echo "==> Backup already exists, keeping original."
-fi
-
-# Always extract from the original backup for a clean baseline
-SOURCE="$ASAR"
-if [ -f "$BACKUP" ]; then
-  SOURCE="$BACKUP"
-fi
-
-echo "==> Extracting..."
-npx --yes asar extract "$SOURCE" "$WORKDIR/wispr"
-
-# Verify expected renderer paths exist
-for renderer in "${RENDERERS[@]}"; do
-  target="$WORKDIR/wispr/.webpack/renderer/$renderer/index.html"
-  if [ ! -f "$target" ]; then
-    echo "Error: $renderer renderer not found — Wispr Flow may have updated its structure."
-    exit 1
-  fi
-done
-
-echo "==> Patching hub..."
-cat > "$WORKDIR/wispr/.webpack/renderer/hub/index.html" << HTMLEOF
-<!doctype html><html style="height:100%;width:100%"><head><meta charset="UTF-8"/><style>${DARK_CSS}</style><script defer="defer" src="../vendor/index.js"></script><script defer="defer" src="../hub/index.js"></script></head><body style="background:#1a1a1a;height:100%;width:100%;overflow:hidden"></body></html>
-HTMLEOF
-
-echo "==> Patching scratchpad..."
-cat > "$WORKDIR/wispr/.webpack/renderer/scratchpad/index.html" << HTMLEOF
-<!doctype html><html><head><meta charset="UTF-8"/><style>${DARK_CSS}</style><script defer="defer" src="../vendor/index.js"></script><script defer="defer" src="../scratchpad/index.js"></script></head><body style="overflow:hidden;background:#1a1a1a"></body></html>
-HTMLEOF
-
-echo "==> Patching context menu..."
-cat > "$WORKDIR/wispr/.webpack/renderer/contextMenu/index.html" << HTMLEOF
-<!doctype html><html><head><meta charset="UTF-8"/><title>Context Menu</title><style>body{margin:0;padding:0;background:transparent;overflow:hidden}${DARK_CSS}</style><script defer="defer" src="../vendor/index.js"></script><script defer="defer" src="../contextMenu/index.js"></script></head><body><div id="root"></div></body></html>
-HTMLEOF
-
-# Status bar: no invert — it's already dark/transparent natively
-echo "==> Patching status bar..."
-cat > "$WORKDIR/wispr/.webpack/renderer/status/index.html" << 'HTMLEOF'
-<!doctype html><html><head><meta charset="UTF-8"/><style>
-html, body { background: transparent !important; }
-* { border-color: transparent !important; box-shadow: none !important; }
-</style><script defer="defer" src="../vendor/index.js"></script><script defer="defer" src="../status/index.js"></script></head><body style="overflow:hidden"></body></html>
-HTMLEOF
-
-# Pack to temp file first, then copy into place (safe against partial writes)
-echo "==> Repacking..."
-npx --yes asar pack "$WORKDIR/wispr" "$WORKDIR/patched.asar"
-cp "$WORKDIR/patched.asar" "$ASAR"
-
-echo "==> Restarting Wispr Flow..."
+# Kill Wispr BEFORE touching anything
 killall 'Wispr Flow' 2>/dev/null || true
-for _ in 1 2 3 4 5; do
-  pgrep -x 'Wispr Flow' > /dev/null || break
-  sleep 1
-done
-open -a 'Wispr Flow'
+for _ in 1 2 3 4 5; do pgrep -x 'Wispr Flow' >/dev/null || break; sleep 1; done
 
-echo ""
-echo "Done! Dark mode applied."
-echo "To restore: wispr-dark-mode --restore"
+# --restore
+if [[ "${1:-}" == "--restore" ]]; then
+  [[ -f "$BACKUP" ]] || { echo "No backup found."; exit 1; }
+  mv "$BACKUP" "$ASAR"
+  ASAR_WRITTEN=1
+  echo "Restored. Wispr Flow will restart."
+  exit 0
+fi
+
+# Backup (first run only)
+[[ -f "$BACKUP" ]] || cp "$ASAR" "$BACKUP"
+
+# Always extract from clean backup
+echo "==> Extracting..."
+npx --yes "$ASAR_CMD" extract "$BACKUP" "$WORKDIR/wispr"
+
+# Theme CSS — injected before </head>, preserving all original content
+DARK_CSS='<style data-wispr-dark-smokey>html{background:#1a1a1a!important;filter:invert(.94) hue-rotate(180deg)!important}img,video,canvas,svg image,picture>img{filter:invert(1) hue-rotate(180deg)!important}:root{--sand-50:#fff!important;--sand-100:#fff!important;--sand-200:#fff!important;--sand-300:#fff!important;--sand-400:#fff!important;--sand-500:#fff!important;--vast-50:#fff!important;--vast-100:#fff!important;--neutral-10:#fff!important}*:not(input):not(select):not(textarea):not([type=checkbox]):not([type=radio]):not([role=switch]):not([role=checkbox]):not([role=radio]):not([role=combobox]):not([role=listbox]):not([role=slider]):not([class*=toggle]):not([class*=switch]):not([class*=check]):not([class*=radio]):not([class*=select]):not([class*=dropdown]):not([class*=picker]):not([class*=slider]){border-color:transparent!important;box-shadow:none!important}*:focus-visible{outline:2px solid rgba(100,149,237,.6)!important;outline-offset:2px}body{filter:sepia(.08)}nav a,nav button,li>a,li>button,a[role=tab]{border:1px solid rgba(128,128,128,.18)!important;border-radius:8px}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(128,128,128,.15);border-radius:3px}</style>'
+
+STATUS_CSS='<style data-wispr-dark-smokey>html,body{background:transparent!important}*{border-color:transparent!important;box-shadow:none!important}</style>'
+
+# Inject into existing HTML — preserves all original script tags and content
+for renderer in hub scratchpad contextMenu; do
+  target="$WORKDIR/wispr/.webpack/renderer/$renderer/index.html"
+  [[ -f "$target" ]] || { echo "Error: $renderer not found — Wispr Flow may have updated its structure."; exit 1; }
+
+  if grep -q "$MARKER" "$target"; then
+    echo "==> $renderer already patched, skipping."
+    continue
+  fi
+
+  echo "==> Patching $renderer..."
+  sed -i '' "s|</head>|${DARK_CSS}</head>|" "$target"
+done
+
+# Status bar: no invert — already dark/transparent natively
+target="$WORKDIR/wispr/.webpack/renderer/status/index.html"
+if [[ -f "$target" ]] && ! grep -q "$MARKER" "$target"; then
+  echo "==> Patching status..."
+  sed -i '' "s|</head>|${STATUS_CSS}</head>|" "$target"
+fi
+
+# Pack to temp on same filesystem, then atomic rename
+echo "==> Repacking..."
+npx --yes "$ASAR_CMD" pack "$WORKDIR/wispr" "$WORKDIR/patched.asar"
+TMPFILE="$(dirname "$ASAR")/.app.asar.tmp.$$"
+cp "$WORKDIR/patched.asar" "$TMPFILE"
+mv "$TMPFILE" "$ASAR"
+ASAR_WRITTEN=1
+
+echo "Done. Dark Smokey applied."
