@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Wispr Flow Dark Mode Patcher
+# Patches the Electron app bundle to force dark mode on all UI windows.
+# Re-run after any Wispr Flow update.
+#
+# How it works:
+#   Wispr Flow's hub window has background-color: white hardcoded in the HTML.
+#   The React app has no dark mode toggle. This script injects a CSS
+#   filter: invert(0.9) hue-rotate(180deg) into the renderer HTML files,
+#   flipping the entire UI to dark. Images are counter-inverted so they
+#   render normally.
+#
+# Requirements: Node.js (for npx asar)
+# Usage: wispr-dark-mode [--restore]
+
+ASAR="/Applications/Wispr Flow.app/Contents/Resources/app.asar"
+BACKUP="${ASAR}.bak"
+
+if [ ! -f "$ASAR" ]; then
+  echo "Error: Wispr Flow not found at $ASAR"
+  echo "Expected: /Applications/Wispr Flow.app"
+  exit 1
+fi
+
+# Restore mode
+if [ "${1:-}" = "--restore" ]; then
+  if [ -f "$BACKUP" ]; then
+    cp "$BACKUP" "$ASAR"
+    echo "Restored original Wispr Flow. Restart the app to apply."
+  else
+    echo "No backup found at $BACKUP"
+  fi
+  exit 0
+fi
+
+TMPDIR=$(mktemp -d)
+trap 'rm -rf "$TMPDIR"' EXIT
+
+echo "==> Backing up app.asar..."
+cp "$ASAR" "$BACKUP"
+
+echo "==> Extracting app bundle..."
+npx --yes asar extract "$ASAR" "$TMPDIR/wispr" 2>/dev/null
+
+echo "==> Patching hub window..."
+cat > "$TMPDIR/wispr/.webpack/renderer/hub/index.html" << 'HTMLEOF'
+<!doctype html><html style="height: 100%; width: 100%"><head><meta charset="UTF-8"/><style>
+html {
+  background: #1a1a1a !important;
+  filter: invert(0.9) hue-rotate(180deg) !important;
+}
+img, video, canvas, svg image, picture {
+  filter: invert(1) hue-rotate(180deg) !important;
+}
+</style><script defer="defer" src="../vendor/index.js"></script><script defer="defer" src="../hub/index.js"></script></head><body style="background-color: #1a1a1a; height: 100%; width: 100%; overflow: hidden"></body></html>
+HTMLEOF
+
+echo "==> Patching scratchpad window..."
+cat > "$TMPDIR/wispr/.webpack/renderer/scratchpad/index.html" << 'HTMLEOF'
+<!doctype html><html><head><meta charset="UTF-8"/><style>
+html { background: #1a1a1a !important; filter: invert(0.9) hue-rotate(180deg) !important; }
+img, video, canvas, svg image { filter: invert(1) hue-rotate(180deg) !important; }
+</style><script defer="defer" src="../vendor/index.js"></script><script defer="defer" src="../scratchpad/index.js"></script></head><body style="overflow: hidden; background-color: #1a1a1a;"></body></html>
+HTMLEOF
+
+echo "==> Repacking app bundle..."
+npx --yes asar pack "$TMPDIR/wispr" "$ASAR" 2>/dev/null
+
+echo ""
+echo "Done! Restart Wispr Flow to apply:"
+echo "  killall 'Wispr Flow' && open -a 'Wispr Flow'"
+echo ""
+echo "To restore the original: wispr-dark-mode --restore"
