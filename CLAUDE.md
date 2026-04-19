@@ -37,16 +37,16 @@ wispr-flow-dark-smokey --version  # Print version
 - `meeting_recorder` renderer exists but intentionally not patched (transient window)
 
 ## CSS Strategy
-- `filter: invert(.85) hue-rotate(180deg) sepia(.30) brightness(.95)` on `html`
-- `body` also gets background to prevent white flash during paint
+- `filter: invert(.89) hue-rotate(180deg) sepia(.07) brightness(.95)` on `html`
+- Background `#141210` on both `html` and `body` — prevents white flash during paint
+- Animated smoke: `body::before` radial gradients with 90s `wispr-smoke` keyframe
 - CSS variable overrides: all `--sand-*`, `--vast-*`, `--neutral-10` forced to `#fff`
-- Form elements (`input/textarea/select/button/[role=combobox]`) forced white
 - Modal overlays targeted by CSS Module hashed class names (see Overlay Hashes)
 - Images/video/canvas counter-inverted: `filter: invert(1) hue-rotate(180deg)`
 - `-webkit-font-smoothing: antialiased` prevents text bloom
 - Selection color: warm amber `rgba(180,140,100,.35)` matching smoky aesthetic
-- Focus: `rgba(100,149,237,.9)` for WCAG AA compliance
-- Scrollbar: 6px width, hover + active states
+- Focus: `rgba(100,149,237,.6)` outline with 2px offset
+- Scrollbar: 5px width, hover + active states
 
 ## Overlay Hashes (Wispr Flow 1.4.x)
 These CSS Module hashes break on app updates. To find new ones:

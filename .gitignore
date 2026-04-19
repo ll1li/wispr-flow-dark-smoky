@@ -1,2 +1,8 @@
 .DS_Store
 *.bak
+.claude/
+.claude-handoff.json
+Dark-Reader-Settings.json
+DarkReader-manual-raycast-com.css
+preload.js
+skills-lock.json
