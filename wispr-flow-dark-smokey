@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="1.3.0"
+VERSION="1.3.2"
 ASAR="${WISPR_PATH:-/Applications/Wispr Flow.app}/Contents/Resources/app.asar"
 UNPACKED="${ASAR}.unpacked"
 BACKUP="${ASAR}.bak"
@@ -106,10 +106,10 @@ npx --yes "$ASAR_CMD" extract "$BACKUP" "$WORKDIR/wispr"
 # Strategy: filter:invert on <html> flips the entire rendered UI to dark.
 # Everything below compensates for side-effects of that inversion:
 #
-#   1. invert(0.90)          — high invert for deep dark, avoids pure-black
+#   1. invert(0.89)          — high invert for deep dark, avoids pure-black
 #   2. hue-rotate(180deg)    — restores hue relationships after inversion
-#   3. sepia(0.10)           — subtle warmth, not noisy
-#   4. brightness(0.98)      — minimal pullback to stay dark
+#   3. sepia(0.07)           — subtle warmth, not brown
+#   4. brightness(0.95)      — minimal pullback to stay dark
 #   5. body::before smoke    — static radial gradients (no animation — GPU safe)
 #   6. --sand-* / --vast-*   — graduated near-white values so inversion
 #                              produces natural depth variation
