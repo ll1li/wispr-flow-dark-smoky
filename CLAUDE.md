@@ -13,8 +13,8 @@ No build system, no dependencies beyond Node.js (`npx asar`).
 - GitHub repo: `ll1li/wispr-flow-dark-smokey`
 
 ## Project Layout
-- `wispr-flow-dark-smokey` — the script (v1.3.0). Injects `<style>` before `</head>`, idempotent.
-- `screenshot.jpg` — hero image for README
+- `wispr-flow-dark-smokey` — the script (v1.3.3). Injects `<style>` before `</head>`, idempotent.
+- `banner.png` — hero image for README (replaced `screenshot.jpg` in v1.3.3)
 - Single-file project. No tests, no CI — manual verification only.
 
 ## Commands
