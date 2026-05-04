@@ -18,22 +18,34 @@ APP_WAS_RUNNING=0
 pgrep -x 'Wispr Flow' >/dev/null && APP_WAS_RUNNING=1 || true
 
 usage() {
-  echo "wispr-flow-dark-smokey $VERSION — dark theme for Wispr Flow"
-  echo ""
-  echo "Usage: wispr-flow-dark-smokey [--restore|--check|--version|--help]"
-  echo ""
-  echo "  (no args)    Apply dark theme"
-  echo "  --restore    Restore original Wispr Flow"
-  echo "  --check      Check if theme is currently applied"
-  echo "  --version    Print version"
-  echo "  --help       Show this help"
-  echo ""
-  echo "Set WISPR_PATH to override the default install location."
+  cat <<EOF
+wispr-flow-dark-smokey $VERSION — dark theme for Wispr Flow
+
+Usage: wispr-flow-dark-smokey [--restore|--check|--version|--help]
+
+  (no args)    Apply the dark theme
+  --restore    Restore original Wispr Flow
+  --check      Check if the theme is currently applied
+  --version    Print version
+  --help       Show this help
+
+Set WISPR_PATH to override the default install location.
+EOF
   exit 0
 }
 
-[[ "${1:-}" == "--help" ]]    && usage
-[[ "${1:-}" == "--version" ]] && echo "wispr-flow-dark-smokey $VERSION" && exit 0
+# Argument parsing
+ACTION="apply"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --help)        usage ;;
+    --version)     echo "wispr-flow-dark-smokey $VERSION"; exit 0 ;;
+    --restore)     ACTION="restore"; shift ;;
+    --check)       ACTION="check"; shift ;;
+    *) echo "Error: unknown argument '$1'"; echo; usage ;;
+  esac
+done
+
 [[ -f "$ASAR" ]]              || { echo "Error: Wispr Flow not found at $ASAR"; exit 1; }
 command -v npx &>/dev/null    || { echo "Error: Node.js required (npx not found). Install: https://nodejs.org"; exit 1; }
 
@@ -52,10 +64,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# --check: detect if theme is applied
-if [[ "${1:-}" == "--check" ]]; then
-  npx --yes "$ASAR_CMD" extract "$ASAR" "$WORKDIR/wispr" 2>/dev/null
-  if grep -q "$MARKER" "$WORKDIR/wispr/.webpack/renderer/hub/index.html" 2>/dev/null; then
+# --check: detect if theme is applied — read asar bytes directly, no extract.
+# The asar format stores HTML uncompressed, so the marker is searchable as a
+# literal string in the binary.
+if [[ "$ACTION" == "check" ]]; then
+  if LC_ALL=C grep -qa "$MARKER" "$ASAR" 2>/dev/null; then
     echo "Dark Smokey is applied."
   else
     echo "Dark Smokey is not applied."
@@ -70,7 +83,7 @@ if [[ "$APP_WAS_RUNNING" == "1" ]]; then
 fi
 
 # --restore
-if [[ "${1:-}" == "--restore" ]]; then
+if [[ "$ACTION" == "restore" ]]; then
   [[ -f "$BACKUP" ]] || { echo "No backup found."; exit 1; }
   mv "$BACKUP" "$ASAR"
   if [[ -d "$BACKUP_UNPACKED" ]]; then
@@ -109,34 +122,24 @@ npx --yes "$ASAR_CMD" extract "$BACKUP" "$WORKDIR/wispr"
 #   1. invert(0.91)          — high invert for deep dark, avoids pure-black
 #   2. hue-rotate(180deg)    — restores hue relationships after inversion
 #   3. brightness(0.93)      — minimal pullback to stay dark (no sepia — neutral tone)
-#   4. #15131a bg            — neutral dark with faint cool tint (no brown)
+#   4. #15131a bg            — neutral dark with faint cool tint, prevents white flash
 #   5. --sand-* / --vast-*   — graduated near-white values so inversion
 #                              produces natural depth variation
 #   6. img/video/canvas      — counter-invert to restore natural media colours
-#   7. Overlay hashed classes — these change on app updates; see OVERLAY NOTE below
-#
-# Removed in v1.3.3: animated body::before smoke gradient. It was running a 90s
-# infinite keyframe on a 120vw fixed overlay — constant GPU cost for subtle effect.
-#
-# OVERLAY NOTE: The hashed classes (.mgB3HwW13t29DKsEkfUD etc.) target specific
-# modal overlay elements. They break when Wispr Flow updates its CSS Modules hash.
-# To find new hashes after an update, extract the asar and run:
-#   grep -r "position:fixed;inset:0;background-color:rgba" .webpack/renderer/
-# then update the three class selectors below and re-run this script.
-#
 DARK_CSS='<style data-wispr-dark-smokey>html{background:#15131a!important;filter:invert(.91) hue-rotate(180deg) brightness(.93)!important;-webkit-font-smoothing:antialiased!important}body{background:#15131a!important}img,video,canvas,svg image,picture>img{filter:invert(1) hue-rotate(180deg)!important}:root{--sand-50:#fff!important;--sand-100:#fefefe!important;--sand-200:#fdfdfc!important;--sand-300:#fcfcfb!important;--sand-400:#fbfbfa!important;--sand-500:#fafaf9!important;--vast-50:#fefefe!important;--vast-100:#fdfdfc!important;--neutral-10:#fff!important}*:focus-visible{outline:2px solid rgba(100,149,237,.6)!important;outline-offset:2px!important}::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(128,128,128,.22);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:rgba(128,128,128,.5)}::-webkit-scrollbar-thumb:active{background:rgba(128,128,128,.7)}::selection{background:rgba(120,130,170,.35)!important;color:inherit!important}</style>'
 
 STATUS_CSS='<style data-wispr-dark-smokey>html,body{background:transparent!important}*{border-color:transparent!important;box-shadow:none!important}</style>'
 
-# Inject into existing HTML — preserves all original script tags and content
-# Strip any previous patch first, then inject fresh CSS
+# Inject into existing HTML — preserves all original script tags and content.
+# Strip pattern matches both legacy bare markers and any attribute-bearing
+# markers from intermediate v1.4.x installs, so upgrades are clean.
 for renderer in hub scratchpad contextMenu; do
   target="$WORKDIR/wispr/.webpack/renderer/$renderer/index.html"
   [[ -f "$target" ]] || { echo "Error: $renderer not found — Wispr Flow may have updated its structure."; exit 1; }
 
   if grep -q "$MARKER" "$target"; then
     echo "==> Stripping old patch from $renderer..."
-    sed -i '' "s|<style ${MARKER}>.*</style>||g" "$target"
+    sed -i '' "s|<style ${MARKER}[^>]*>.*</style>||g" "$target"
   fi
 
   echo "==> Patching $renderer..."
@@ -151,7 +154,7 @@ done
 target="$WORKDIR/wispr/.webpack/renderer/status/index.html"
 if [[ -f "$target" ]]; then
   if grep -q "$MARKER" "$target"; then
-    sed -i '' "s|<style ${MARKER}>.*</style>||g" "$target"
+    sed -i '' "s|<style ${MARKER}[^>]*>.*</style>||g" "$target"
   fi
   echo "==> Patching status..."
   sed -i '' "s|</head>|${STATUS_CSS}</head>|" "$target"
@@ -161,11 +164,19 @@ if [[ -f "$target" ]]; then
   }
 fi
 
-# Pack to temp on same filesystem, then atomic rename
+# Pack to temp on same filesystem, then atomic rename. Verify the temp file
+# matches the packed source before swapping — catches truncated copies on
+# disk-pressure conditions.
 echo "==> Repacking..."
 npx --yes "$ASAR_CMD" pack "$WORKDIR/wispr" "$WORKDIR/patched.asar"
+PACKED_SIZE=$(wc -c < "$WORKDIR/patched.asar" | tr -d ' ')
+[[ "$PACKED_SIZE" -gt 0 ]] || { echo "Error: asar pack produced empty file"; exit 1; }
+
 TMPFILE=$(mktemp "$(dirname "$ASAR")/.app.asar.tmp.XXXXXXXXXX")
 cp "$WORKDIR/patched.asar" "$TMPFILE"
+TMP_SIZE=$(wc -c < "$TMPFILE" | tr -d ' ')
+[[ "$TMP_SIZE" -eq "$PACKED_SIZE" ]] || { echo "Error: temp file copy truncated ($TMP_SIZE / $PACKED_SIZE bytes)"; exit 1; }
+
 mv "$TMPFILE" "$ASAR"
 TMPFILE=""  # mv consumed it; prevent cleanup from attempting rm
 ASAR_WRITTEN=1
