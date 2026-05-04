@@ -2,7 +2,7 @@
   Wispr Flow Dark-Smokey
 </h1>
 
-<h4 align="center">A one-command dark theme for <a href="https://wispr.com/" target="_blank">Wispr Flow</a> — clean, neutral, no eye strain. macOS and Windows.</h4>
+<h4 align="center">A one-command dark theme for <a href="https://wispr.com/" target="_blank">Wispr Flow</a> on macOS and Windows — neutral, clean, and easy to live with.</h4>
 
 <p align="center">
   <a href="https://github.com/ll1li/wispr-flow-dark-smokey/blob/main/LICENSE">
@@ -30,7 +30,7 @@
 
 ## Why
 
-Wispr Flow ships with a hardcoded white UI and no dark mode option. Late-night dictation sessions mean staring directly into a full-brightness white window. This script patches Wispr Flow's Electron `app.asar` bundle to inject a neutral dark theme — dark without a strong colour cast, zero GPU overhead, one command to apply or undo.
+Wispr Flow ships with a hardcoded white UI and no dark mode option. If you use it at night, the default window is hard to ignore. This project patches Wispr Flow's Electron `app.asar` bundle to inject a neutral dark theme: dark without a strong colour cast, static instead of animated, and easy to apply or undo.
 
 ## Features
 
@@ -97,6 +97,41 @@ $env:WISPR_PATH = "D:\Apps\WisprFlow"; wispr-flow-dark-smokey
 ```
 
 > Wispr Flow auto-updates silently overwrite the patch on macOS, and create a new versioned install directory on Windows. Just re-run `wispr-flow-dark-smokey` after any app update.
+
+## Updating
+
+Wispr Flow updates overwrite the patch on macOS and create a new versioned install directory on Windows. After any Wispr Flow update, just run `wispr-flow-dark-smokey` again.
+
+## Restore / Uninstall
+
+To remove the theme and go back to the original app bundle:
+
+```bash
+wispr-flow-dark-smokey --restore
+```
+
+To remove only the installed command:
+
+* macOS: delete `/usr/local/bin/wispr-flow-dark-smokey`
+* Windows: delete `wispr-flow-dark-smokey.ps1` and `wispr-flow-dark-smokey.cmd` from `%USERPROFILE%\.local\bin\`
+
+## Troubleshooting
+
+### `npx not found`
+
+Install [Node.js](https://nodejs.org/). The patcher uses `npx` to run `@electron/asar@4.2.0`.
+
+### `Wispr Flow not found`
+
+Install Wispr Flow first, or set `WISPR_PATH` to a custom install location.
+
+### The patch disappeared after a Wispr Flow update
+
+That is expected. Wispr Flow updates replace the patched bundle on macOS and move Windows installs to a new versioned directory. Re-run the command after each app update.
+
+### Windows says the command is not found right after install
+
+Open a new terminal window so the updated user `PATH` is picked up, or run the script directly from `%USERPROFILE%\.local\bin\`.
 
 ## How It Works
 
