@@ -30,7 +30,7 @@
 
 ## Why
 
-Wispr Flow ships with a hardcoded white UI and no dark mode option. Late-night dictation sessions mean staring directly into a full-brightness white window. This script patches Wispr Flow's Electron `app.asar` bundle to inject a neutral dark theme — deep without being clinical, zero GPU overhead, one command to apply or undo.
+Wispr Flow ships with a hardcoded white UI and no dark mode option. Late-night dictation sessions mean staring directly into a full-brightness white window. This script patches Wispr Flow's Electron `app.asar` bundle to inject a neutral dark theme — dark without a strong colour cast, zero GPU overhead, one command to apply or undo.
 
 ## Features
 
@@ -38,7 +38,7 @@ Wispr Flow ships with a hardcoded white UI and no dark mode option. Late-night d
 |---|---|
 | **Neutral dark tone** | `invert(.91) hue-rotate(180deg) brightness(.93)` — deep dark without a colour cast |
 | **Zero GPU overhead** | No animated overlays, no atmospheric layers — static CSS only |
-| **Anti-flashbang** | Dark backstop on `<html>` and `<body>` prevents being flashbanged and can actually navigate the application with your eyes |
+| **Anti-flashbang** | Dark backstop on `<html>` and `<body>` prevents bright white flashes during startup and navigation |
 | **Uniform dark surfaces** | Overrides internal CSS variables so sidebar, content, and modals all match |
 | **Natural media** | Images, video, and canvas are counter-inverted so they render correctly |
 | **Atomic write** | Patches via temp file + rename, with size verification — never leaves a corrupt bundle |
@@ -123,7 +123,7 @@ Four renderers are patched: `hub`, `scratchpad`, `contextMenu`, and `status`. Th
 - **Backup integrity** — backup includes the `app.asar.unpacked/` directory so native binaries (e.g. Jabra connectors) are preserved
 - **Graceful process handling** — Wispr Flow is killed before any file is touched and restarted from a `trap` / `finally` block whether the script succeeds or fails (10-second budget on Windows for slow handle release)
 - **Post-inject verification** — the script checks for the CSS marker after injection and exits loudly if it is missing
-- **Pinned asar version** — `@electron/asar@4.2.0`; no floating dependency, no supply-chain surprises
+- **Pinned asar version** — `@electron/asar@4.2.0`; no floating dependency, pinned dependency version for predictable behaviour
 - **Backward-compatible strip** — the strip regex matches any `<style data-wispr-dark-smokey…>` marker, so upgrading from any v1.x install is a clean overwrite
 
 <details>

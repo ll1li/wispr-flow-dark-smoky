@@ -1,6 +1,6 @@
 @echo off
-rem wispr-flow-dark-smokey.cmd - cmd.exe shim that forwards all args to the PowerShell script.
-rem Lets users invoke `wispr-flow-dark-smokey` with any flags from cmd or any PATH-aware launcher.
+rem Command shim for invoking the PowerShell script from cmd.exe or other PATH-aware launchers.
+rem Forwards all arguments to wispr-flow-dark-smokey.ps1.
 setlocal
 set "SCRIPT_DIR=%~dp0"
 set "PS1=%SCRIPT_DIR%wispr-flow-dark-smokey.ps1"
