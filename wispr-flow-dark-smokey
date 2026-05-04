@@ -10,7 +10,7 @@ ASAR_WRITTEN=0
 TMPFILE=""
 MARKER="data-wispr-dark-smokey"
 
-# Pinned version — no supply chain surprise
+# Pinned version for predictable behaviour
 ASAR_CMD="@electron/asar@4.2.0"
 
 # Track whether the app was running before we kill it

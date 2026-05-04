@@ -50,19 +50,15 @@ Wispr Flow ships with a hardcoded white UI and no dark mode option. Late-night d
 
 ### macOS
 
-```bash
-mkdir -p ~/.local/bin
-curl -fsSL https://raw.githubusercontent.com/ll1li/wispr-flow-dark-smokey/main/wispr-flow-dark-smokey \
-  -o ~/.local/bin/wispr-flow-dark-smokey && chmod +x ~/.local/bin/wispr-flow-dark-smokey
-```
-
-Make sure `~/.local/bin` is in your `PATH`:
+One-line install:
 
 ```bash
-export PATH="$HOME/.local/bin:$PATH"
+curl -fsSL https://raw.githubusercontent.com/ll1li/wispr-flow-dark-smokey/main/install-macos.sh | bash
 ```
 
-Add that line to your `~/.zshrc` or `~/.bash_profile` to make it permanent.
+The installer places `wispr-flow-dark-smokey` in `/usr/local/bin`, which is already on the default `PATH` on most macOS systems. It uses `sudo` only if needed.
+
+> **Manual install:** download `wispr-flow-dark-smokey` to `/usr/local/bin/` and make it executable.
 
 ### Windows
 
@@ -123,7 +119,7 @@ Four renderers are patched: `hub`, `scratchpad`, `contextMenu`, and `status`. Th
 - **Backup integrity** — backup includes the `app.asar.unpacked/` directory so native binaries (e.g. Jabra connectors) are preserved
 - **Graceful process handling** — Wispr Flow is killed before any file is touched and restarted from a `trap` / `finally` block whether the script succeeds or fails (10-second budget on Windows for slow handle release)
 - **Post-inject verification** — the script checks for the CSS marker after injection and exits loudly if it is missing
-- **Pinned asar version** — `@electron/asar@4.2.0`; no floating dependency, pinned dependency version for predictable behaviour
+- **Pinned asar version** — `@electron/asar@4.2.0`; no floating dependency, predictable behaviour
 - **Backward-compatible strip** — the strip regex matches any `<style data-wispr-dark-smokey…>` marker, so upgrading from any v1.x install is a clean overwrite
 
 <details>
